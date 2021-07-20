@@ -33,6 +33,8 @@
                 artistRole.selection = 0;
             artistNameLabel.text = "Artist:";
             artistRoleLabel.text = "Role:";
+            //****//
+            
             artistName.text = system.callSystem("whoami");
             var myButtonGroup = win.add ("group");
                 myButtonGroup.spacing = 4;
@@ -89,6 +91,7 @@
     }
 
     function getSelectedProjectItems(){
+        
         var items = [];
         var p = app.project;
         for ( var i = 1 ; i <= p.numItems ; i ++ ){
@@ -97,6 +100,7 @@
                 items.push(item);
             }
         }
+
         return items;
     }
     
@@ -116,7 +120,7 @@
         dt = new Date();
         y =  String(dt.getFullYear()).substring(2,4);
         m = pad(dt.getMonth()+1,2);
-        d =  pad(dt.getUTCDate()-1,2);
+        d =  pad(dt.getDate()-1,2);
         
         todayString = String(m)+"_"+String(d)+"_"+String(y); 
         
@@ -136,14 +140,16 @@
         return offlineRevCode;
     }
     function getItemTrunk( projectItem ){
+
         var walkBranch =[]
         currentItem = projectItem;
-
+        
         while ( currentItem.parentFolder.name != "Root"){
+            
             walkBranch.push(currentItem.parentFolder );
             currentItem = currentItem.parentFolder;
         }
-        
+
         return walkBranch
     }
     function getItemPath( projectItem ){
@@ -326,17 +332,47 @@
     }
 
     function test(){
-        var t = getItemTrunk(getSelectedProjectItems()[0]);
+        var my_item = getSelectedProjectItems()[0];
+
+        var t = getItemTrunk(my_item);
+
         var date_re = "[0-9\_]{8}"
+
+        var next_n // for folder creation
+        var new_folder;
+
         for ( var i = 0 ; i < t.length ; i ++ )
-        {
+        {   
+
             var date_search = t[i].name.search(date_re);
+            
             if ( date_search == 0 )
             {
-                alert(t[i].name);
+                new_folder = t[i].parentFolder.items.addFolder( getTodayString() )               
             };
         }
 
+        // for (var i = next_n-1 ; i >= 0 ; i -- ){
+        //     //alert( t[i+1].name + "/" + t[i].name )
+        //     //alert( new_folder.name );
+        //     if(i == next_n - 1){
+        //         t[i] = new_folder;
+        //     }
+        //     alert(t[i].name)
+        //         t[i+1].items.addFolder(t[i].name);
+        //     // var next_folder;
+        //     // if(i == next_n - 1){
+        //     //     next_folder = new_folder.items.addFolder( t[i].name );
+        //     // }else{
+        //     //     next_folder = next_folder.parentFolder
+        //     // }
+            
+        //     // t[i-1].items.addFolder( t[i].name );
+            
+            
+            
+        //     //t[i+1].items.addFolder( t[i].name );
+        // }
     }
 
 
