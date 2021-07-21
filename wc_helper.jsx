@@ -76,20 +76,18 @@
     }
 
     /* General functions */
-    
     function pad(n,i){ //pad n with ceroes up to i places.
-    if (String(n).length>=i){
-        return String(n)
-    }else{
-        dif = i- (String(n)).length;
-        padding = "";
-        for (p=0;p<dif;p++){
-            padding = padding+"0"
-        }
-        return padding+String(n)
+        if (String(n).length>=i){
+            return String(n)
+        }else{
+            dif = i- (String(n)).length;
+            padding = "";
+            for (p=0;p<dif;p++){
+                padding = padding+"0"
+            }
+            return padding+String(n)
         }
     }
-
     function getSelectedProjectItems(){
         
         var items = [];
@@ -103,41 +101,19 @@
 
         return items;
     }
-    
     function getRegex( myComp , regex ){
         var offlineRevCode = myComp.name;
         return offlineRevCode.match(regex)[0];
     }
-
-    /* Project Specific functions */
-
-    // function renderSelectedComps(){
-    //     // alert();
-    // }
-
-
     function getTodayString(){
         dt = new Date();
         y =  String(dt.getFullYear()).substring(2,4);
         m = pad(dt.getMonth()+1,2);
-        d =  pad(dt.getDate()-1,2);
-        
+        d =  pad(dt.getDate(),2);
+        alert("m:"+m+"d:"+d+"y:"+y);
         todayString = String(m)+"_"+String(d)+"_"+String(y); 
         
         return todayString
-    }
-    function getOfflineRevCode( myComp ){
-        
-        //var regex = /[0-9]{2}[a-z]{2}/g; //Maixmum rev number 99
-        var regex = /[0-9]{2}[a-z]{2}/g; //Maixmum rev number 99
-        var offlineRevCode = myComp.name.match(regex)[0];        
-        return offlineRevCode;
-    }
-    function getFinishingRevCode( myComp ){
-        
-        var regex = /[0-9]{2}[a-z]{2}FIN/g; //Maixmum rev number 99
-        var offlineRevCode = myComp.name.match(regex)[0];        
-        return offlineRevCode;
     }
     function getItemTrunk( projectItem ){
 
@@ -151,6 +127,20 @@
         }
 
         return walkBranch
+    }
+    /* Project Specific functions */
+    function getOfflineRevCode( myComp ){
+        
+        //var regex = /[0-9]{2}[a-z]{2}/g; //Maixmum rev number 99
+        var regex = /[0-9]{2}[a-z]{2}/g; //Maixmum rev number 99
+        var offlineRevCode = myComp.name.match(regex)[0];        
+        return offlineRevCode;
+    }
+    function getFinishingRevCode( myComp ){
+        
+        var regex = /[0-9]{2}[a-z]{2}FIN/g; //Maixmum rev number 99
+        var offlineRevCode = myComp.name.match(regex)[0];        
+        return offlineRevCode;
     }
     function getItemPath( projectItem ){
         //not too useful right now as AE's paths aren't unique./
@@ -166,7 +156,6 @@
         
         return walkPath
     }
-
     function getArtistInitials(){
         
         //mac only for now ?
@@ -181,8 +170,7 @@
 
         return artistInitials;
     }
-    function versionUpSelectedComps( inc )
-    {
+    function versionUpSelectedComps( inc ){
         //really selected items, might be worth to restrict to just comps ?
         var selectedComps = getSelectedProjectItems();
         for ( var i = 0 ; i < selectedComps.length ; i ++ )
@@ -214,7 +202,6 @@
         }
         myComp.name = splitName[0]+pad(ver+inc,2)+newArtistInitials+splitName[1] ;
     }
-
     function getOutputBasePath(){
 
 	    var file = app.project.file;
@@ -245,7 +232,6 @@
 	    // alert(base_path + "/" + getTodayString());
 	    return base_path + "/" + getTodayString();
 	}
-
      function setRenderToProjectPath( rqItem , extra_path ){
          //alert(rqItem);
 
@@ -291,7 +277,6 @@
 		    }
 		}
 	}
-
     function setRendersToProjectPath(){
 	    var q = app.project.renderQueue;
 	    //check the render queue item is not already rendered.
@@ -305,7 +290,6 @@
             }
 	    }
 	}
-
     function renderSelectedToProjectPath(){
         var q = app.project.renderQueue;
 	    var items = getSelectedProjectItems();
@@ -330,7 +314,6 @@
 			}
 		}
     }
-
     function test(){
         var my_item = getSelectedProjectItems()[0];
 
@@ -374,6 +357,5 @@
         //     //t[i+1].items.addFolder( t[i].name );
         // }
     }
-
 
 })(this);
