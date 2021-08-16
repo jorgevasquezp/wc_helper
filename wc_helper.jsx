@@ -338,9 +338,16 @@
 		}
     }
     function versiounUpTodaySelectedComps( inc ){
-        var my_item = getSelectedProjectItems()[0];
+        var myComps = getSelectedProjectItems();
+        for ( var i = 0 ; i < myComps.length ; i ++ ){
+            var myComp = myComps[i];
+            versiounUpTodaySelectedComp( myComp,inc );
+        }
+    }
+    function versiounUpTodaySelectedComp( myComp, inc ){
+        //var my_item = getSelectedProjectItems()[0];
 
-        var t = getItemTrunk(my_item);
+        var t = getItemTrunk(myComp);
 
         var date_re = "[0-9\_]{8}"
 
@@ -368,16 +375,17 @@
         var next_folder = new_folder;
         for ( var i = date_pos-1 ; i >= 0 ; i -- )
         {
-            
+            //todo make sure that the folder doesnt exist yet.
             next_folder = next_folder.items.addFolder(t[i].name);
             
         }
-        new_comp = my_item.duplicate();
-        new_comp.name = my_item.name;
+        new_comp = myComp.duplicate();
+        new_comp.name = myComp.name;
         versionUpComp( new_comp, inc );
         new_comp.parentFolder = next_folder;
-        //my_item.selected = false;
+        //myComp.selected = false;
         //app.project.activeItem = new_comp;
+        myComp.selected = false;
         new_comp.selected = true;
     }
 
