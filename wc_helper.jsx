@@ -21,7 +21,7 @@
         var firstButton = "+1";
         var secondButton = "own";
         var thirdButton = "render";
-        var fourthButton = "<< test >>";
+        var fourthButton = "rename";
         var win = (thisObj instanceof Panel)? thisObj : new Window('palette', windowTitle);
             win.spacing = 0;
             win.margins = 1;
@@ -412,8 +412,8 @@
     }
 
     function btnTest(){
-        CompHerder = new CompHerder();
-        CompHerder.activate();
+        compHerder = new CompHerder();
+        compHerder.activate();
         //alert("Nothing to test right now.")
     }
 
@@ -422,27 +422,8 @@
 
 
 
-function CompHerder()
-{
-    // this.info =
-    // {
-	// name : "CompHerder",
-	// version : 0.1,
-	// stage : "development",
-	// description : "Tool to manage project items.",
-	// url : "yorchnet.com"
-    // };
-    // this.appearence =
-    // {
-	// buttonHeight : 30,
-	// buttonWidth : 126
-    // };
-    // this.resources = 
-    // {
-	// icon : new File('yNet.png'),
-    // };
-    this.methods =
-    {
+function CompHerder(){
+    this.methods ={
 	pad : function ( n , pad ) {
 		zeros = "";
 		for ( i = 0 ; i < pad ; i ++ )
@@ -498,7 +479,31 @@ function CompHerder()
 		item.name = new_name + "_" + i;
 	    }
 	
-	}
+	},
+    insert: function ( position , insert_text  ){
+        compHerder.methods.insertAtSelectedItemsNames(insert_text, position );
+	},
+    insertAt: function ( text , insertText, pos ){
+        var myText = text;
+        var insertText = insertText;
+        var myPos = pos;
+        var newText;
+        if( myPos >= 0 ){
+            newText= myText.substr(0,myPos)+"_"+insertText+myText.substr(myPos);
+        }else{
+            newText= myText.substr(0,myText.length+myPos)+insertText+"_"+myText.substr(myText.length+myPos);
+        }
+        return newText
+    },
+    insertAtSelectedItemsNames: function ( text, pos){
+        var my_comps = getSelectedProjectItems();
+
+        for ( var i = 0; i < my_comps.length ; i ++ ){
+            var myComp = my_comps[i];
+            myComp.name = compHerder.methods.insertAt( myComp.name , text , pos);
+        }
+    }
+
 	
     }
     this.init = function init()
@@ -594,15 +599,40 @@ function CompHerder()
 		    type: 'tab',\
 		    text: 'Rename',\
 		    renameGrp: Group {\
-			alignment: ['fill','fill'], \
-			alignChildren: ['left','center'], \
-			orientation: 'row', \
-			renameString: EditText {text:'NEW NAME',alignment: ['fill','center']}, \
-			renameBtn: Button {text: 'Rename'} ,\
-		    }\
-		}\
-	    },\
-	}";
+                alignment: ['fill','fill'], \
+                alignChildren: ['left','center'], \
+                orientation: 'row', \
+                renameString: EditText {text:'NEW NAME',alignment: ['fill','center']}, \
+                renameBtn: Button {text: 'Rename'} ,\
+		        }\
+		    },\
+        insert_tab: Panel {\
+            type: 'tab',\
+		    text: 'Insert',\
+            insertGrp: Group {\
+                alignment: ['fill','fill'], \
+                alignChildren: ['left','center'], \
+                orientation: 'row', \
+                insertStart: EditText {text:'INSERT AT',alignment: ['fill','center']}, \
+                insertText: EditText {text:'INSERT TEXT',alignment: ['fill','center']}, \
+                insertBtn: Button {text: 'Insert'} ,\
+		        }\
+		    },\
+        trim_tab: Panel {\
+            type: 'tab',\
+		    text: 'Trim',\
+            trimGrp: Group {\
+                alignment: ['fill','fill'], \
+                alignChildren: ['left','center'], \
+                orientation: 'row', \
+                trimStart: EditText {text:'TRIM START',alignment: ['fill','center']}, \
+                trimEnd: EditText {text:'TRIM END',alignment: ['fill','center']}, \
+                trimBtn: Button {text: 'Trim'} ,\
+		        }\
+		    },\
+        },\
+	},\
+    }";
 		
 	myUI.window = new Window( res );
 	myUI.window.layout.layout(true);
@@ -611,6 +641,13 @@ function CompHerder()
 	
 	myUI.window.layout.onResizing = myUI.window.layout.onResize = function () { myUI.layout.resize();}
 	
+    //CLEAR FIELDS
+    myUI.window.tabs.search_tab.searchGrp.searchString.onActivate = function(){
+        myUI.window.tabs.search_tab.searchGrp.searchString.text = "";        
+    }
+     myUI.window.tabs.search_tab.replaceGrp.replaceString.onActivate = function(){
+        myUI.window.tabs.search_tab.searchGrp.replaceString.text = "";        
+    }
 	//EVENT HANDLERS
 	myUI.window.tabs.search_tab.doItBtn.onClick = function(){
 	    var search_str = myUI.window.tabs.search_tab.searchGrp.searchString.text;
@@ -632,12 +669,22 @@ function CompHerder()
 	    var new_name = myUI.window.tabs.rename_tab.renameGrp.renameString.text;
 	    myUI.methods.rename( myUI.methods.getSelectedProjectItems() , new_name );
 	};
+    myUI.window.tabs.insert_tab.insertGrp.insertBtn.onClick = function(){
+        
+	    var insert_at = parseInt(myUI.window.tabs.insert_tab.insertGrp.insertStart.text);
+        var insert_text = myUI.window.tabs.insert_tab.insertGrp.insertText.text;
+        
+        myUI.methods.insert( insert_at , insert_text );
+
+	    // myUI.methods.rename( myUI.methods.getSelectedProjectItems() , new_name );
+	};
+    myUI.window.tabs.trim_tab.trimGrp.trimBtn.onClick = function(){
+        alert('aja');
+	    // var new_name = myUI.window.tabs.rename_tab.renameGrp.renameString.text;
+	    // myUI.methods.rename( myUI.methods.getSelectedProjectItems() , new_name );
+	};
 	
 	return(this);
-    }
-    this.replaceInSelectedItems = function(){
-	var search_string = "GFX";
-	var replace_string = "VFX";
     }
     
     this.activate = function activate()
@@ -648,10 +695,4 @@ function CompHerder()
     this.init();
     return this;
 }
-
-
-
-
-    ////
-
 })(this);
