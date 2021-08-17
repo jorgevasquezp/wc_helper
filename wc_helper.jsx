@@ -625,8 +625,10 @@ function CompHerder(){
                 alignment: ['fill','fill'], \
                 alignChildren: ['left','center'], \
                 orientation: 'row', \
-                trimStart: EditText {text:'TRIM START',alignment: ['fill','center']}, \
-                trimEnd: EditText {text:'TRIM END',alignment: ['fill','center']}, \
+                trimStartEnabled: Checkbox {alignment: ['fill','center']}, \
+                trimStart: EditText {text:'TRIM START', enabled : False, alignment: ['fill','center']}, \
+                trimEndEnabled: Checkbox {alignment: ['fill','center']}, \
+                trimEnd: EditText {text:'TRIM END', enabled : False, alignment: ['fill','center']}, \
                 trimBtn: Button {text: 'Trim'} ,\
 		        }\
 		    },\
@@ -646,7 +648,7 @@ function CompHerder(){
         myUI.window.tabs.search_tab.searchGrp.searchString.text = "";        
     }
      myUI.window.tabs.search_tab.replaceGrp.replaceString.onActivate = function(){
-        myUI.window.tabs.search_tab.searchGrp.replaceString.text = "";        
+        myUI.window.tabs.search_tab.replaceGrp.replaceString.text = "";        
     }
 	//EVENT HANDLERS
 	myUI.window.tabs.search_tab.doItBtn.onClick = function(){
@@ -679,7 +681,10 @@ function CompHerder(){
 	    // myUI.methods.rename( myUI.methods.getSelectedProjectItems() , new_name );
 	};
     myUI.window.tabs.trim_tab.trimGrp.trimBtn.onClick = function(){
-        alert('aja');
+        var startTrim = parseInt(myUI.window.tabs.trim_tab.trimGrp.trimStart.text);
+        var endTrim = parseInt(myUI.window.tabs.trim_tab.trimGrp.trimEnd.text);
+        alert( startTrim +","+ endTrim );
+
 	    // var new_name = myUI.window.tabs.rename_tab.renameGrp.renameString.text;
 	    // myUI.methods.rename( myUI.methods.getSelectedProjectItems() , new_name );
 	};
