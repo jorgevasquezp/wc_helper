@@ -344,6 +344,16 @@
             versiounUpTodaySelectedComp( myComp,inc );
         }
     }
+    function itemIndexInCollection( itemCollection , itemName ){
+        var indexInCollection = -1;
+        for ( var i = 1; i <= itemCollection.length ; i ++){
+            if ( itemCollection[i].name == itemName ){
+                indexInCollection = i;
+            }
+        }
+        return indexInCollection;
+    }
+
     function versiounUpTodaySelectedComp( myComp, inc ){
         //var my_item = getSelectedProjectItems()[0];
 
@@ -364,7 +374,7 @@
                 var date_pos = i;
                 var date_string = getTodayString();
                 //Check if a dated folder already exists.
-                new_folder = getItemByName( date_string );
+                new_folder = getItemByName( date_string );                
                 if ( new_folder == null ){
                     new_folder = t[i].parentFolder.items.addFolder( date_string )               
                 }
@@ -375,8 +385,16 @@
         var next_folder = new_folder;
         for ( var i = date_pos-1 ; i >= 0 ; i -- )
         {
+            var next_folder_name = t[i].name;
             //todo make sure that the folder doesnt exist yet.
-            next_folder = next_folder.items.addFolder(t[i].name);
+            var next_folder_index = itemIndexInCollection( next_folder.items , next_folder_name );
+            //alert(next_folder_index);
+           if ( next_folder_index == -1 ){
+               next_folder = next_folder.items.addFolder(next_folder_name);
+           }else{
+               next_folder = next_folder.items[next_folder_index];
+           }
+            
             
         }
         new_comp = myComp.duplicate();
@@ -393,16 +411,21 @@
     function btnPlus1(){
         var dupli = w.checkbox1.value == true; 
         if ( dupli ){
+            app.beginUndoGroup("Create copies of selected Comps for today and increment.")
             versiounUpTodaySelectedComps( 1 );
         }else{
+            app.beginUndoGroup("Increment selected Comps.")
             versionUpSelectedComps( 1 );
         }
+        app.endUndoGroup()
     }
     function btnOwn(){
         var dupli = w.checkbox1.value == true; 
         if ( dupli ){
+            app.beginUndoGroup("Own duplicates of selected Comps.")
             versiounUpTodaySelectedComps( 0 );
         }else{
+            app.beginUndoGroup("Own selected Comps.")
             versionUpSelectedComps( 0 );
         }
     }
