@@ -12,7 +12,6 @@
     TODO:
         - Get artist initials in Windows too.
 */
-
 (function wcHelperPanel (thisObj) {
     /* Build UI */
     function buildUI(thisObj) {
@@ -23,52 +22,54 @@
         var thirdButton = "render";
         var fourthButton = "rename";
         var win = (thisObj instanceof Panel)? thisObj : new Window('palette', windowTitle);
-            win.spacing = 0;
-            win.margins = 1;
-            var myArtistGroup = win.add ("group");
-                var artistNameLabel= myArtistGroup.add("statictext");
-                win.artistName= myArtistGroup.add("statictext");
-                var artistRoleLabel= myArtistGroup.add("statictext");
-                win.artistRole= myArtistGroup.add("dropdownlist",undefined,["Offline","Finishing"])
-                win.artistRole.selection = 0;
-            artistNameLabel.text = "Artist:";
-            artistRoleLabel.text = "Role:";
-            //****//
-            
-            win.artistName.text = system.callSystem("whoami");
-            var myButtonGroup = win.add ("group");
-                myButtonGroup.spacing = 4;
-                myButtonGroup.margins = 0;
-                myButtonGroup.orientation = "row";
-                win.checkbox1 = myButtonGroup.add( "checkbox", undefined, "Dupli:")
-                win.checkbox1.value = true;
-                win.button1 = myButtonGroup.add ("button", undefined, firstButton);
-                win.button2 = myButtonGroup.add ("button", undefined, secondButton);
-                win.button3 = myButtonGroup.add ("button", undefined, thirdButton);
-                win.button4 = myButtonGroup.add ("button", undefined, fourthButton);
-                myButtonGroup.alignment = "center";
-                myButtonGroup.alignChildren = "center";
+        win.spacing = 0;
+        win.margins = 1;
+        var myArtistGroup = win.add ("group");
+        var artistNameLabel= myArtistGroup.add("statictext");
+        win.artistName= myArtistGroup.add("statictext");
+        var artistRoleLabel= myArtistGroup.add("statictext");
+        win.artistRole= myArtistGroup.add("dropdownlist",undefined,["Offline","Finishing"])
+        win.artistRole.selection = 0;
+        artistNameLabel.text = "Artist:";
+        artistRoleLabel.text = "Role:";
+        //****//
+        
+        win.artistName.text = system.callSystem("whoami");
+        
+        var myButtonGroup = win.add ("group");
+        myButtonGroup.spacing = 4;
+        myButtonGroup.margins = 4;
+        myButtonGroup.orientation = "row";
+        win.checkbox1 = myButtonGroup.add( "checkbox", undefined, "Dupli:")
+        win.checkbox1.value = true;
+        win.button1 = myButtonGroup.add ("button", undefined, firstButton);
+        win.button2 = myButtonGroup.add ("button", undefined, secondButton);
+        var myButtonGroup2 = win.add ("group");
+        win.button3 = myButtonGroup2.add ("button", undefined, thirdButton);
+        win.button4 = myButtonGroup2.add ("button", undefined, fourthButton);
+        myButtonGroup2.alignment = "center";
+        myButtonGroup2.alignChildren = "center";
 
-            win.button1.onClick = function(){
-                btnPlus1();
-                //versionUpSelectedComps(1);
-            }
-            win.button2.onClick = function(){
-                btnOwn();
-            }
-            win.button3.onClick = function(){
-                btnRender();
-            }
+        win.button1.onClick = function(){
+            btnPlus1();
+            //versionUpSelectedComps(1);
+        }
+        win.button2.onClick = function(){
+            btnOwn();
+        }
+        win.button3.onClick = function(){
+            btnRender();
+        }
 
-             win.button4.onClick = function(){
-                btnTest();
-                //alert( getItemByName( getTodayString() ));
-            }
+            win.button4.onClick = function(){
+            btnTest();
+            //alert( getItemByName( getTodayString() ));
+        }
 
-        win.layout.layout(true);
+    win.layout.layout(true);
 
-        return win
-    }
+    return win
+}
 
 
     // Show the Panel
