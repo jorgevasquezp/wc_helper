@@ -24,12 +24,19 @@
         var win = (thisObj instanceof Panel)? thisObj : new Window('palette', windowTitle);
         win.spacing = 0;
         win.margins = 1;
+        var myProjectGroup = win.add ("group");
+        win.projectPathLabel = myProjectGroup.add("statictext");
+
         var myArtistGroup = win.add ("group");
         var artistNameLabel= myArtistGroup.add("statictext");
         win.artistName= myArtistGroup.add("statictext");
         var artistRoleLabel= myArtistGroup.add("statictext");
         win.artistRole= myArtistGroup.add("dropdownlist",undefined,["Offline","Finishing"])
         win.artistRole.selection = 0;
+        
+
+        win.projectPathLabel.text = "asdADSASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASASDasdADSASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASASDasdADSASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASASD";
+
         artistNameLabel.text = "Artist:";
         artistRoleLabel.text = "Role:";
         //****//
@@ -65,6 +72,9 @@
             btnTest();
             //alert( getItemByName( getTodayString() ));
         }
+        win.onResizing = function(){
+            updateProjectPath();
+        }
 
     win.layout.layout(true);
 
@@ -81,6 +91,7 @@
     }
 
     /* General functions */
+    
     w.pad = function ( n, i ){ //pad n with zeroes up to i places.
         if (String(n).length>=i){
             return String(n)
@@ -92,6 +103,11 @@
             }
             return padding+String(n)
         }
+    }
+
+    function updateProjectPath(){
+        w.projectPathLabel.text = getOutputBasePath();
+        //alert(w.projectPathLabel.text);
     }
     function getSelectedProjectItems(){
         
@@ -257,6 +273,12 @@
 	    return base_path + "/" + getTodayString();
 	}
      function setRenderToProjectPath( rqItem , extra_path ){
+        updateProjectPath()
+        var uiPath =  w.projectPathLabel.text;
+        alert(uiPath);
+        
+        //updateProjectPath();
+
          //alert(rqItem);
 
 	    // alert( rqItem );
@@ -269,11 +291,11 @@
 			if ( o_module.file != null ){
 			    if ( extra_path != undefined )
 			    {
-				var new_path = getOutputBasePath()+ "/" +extra_path;
+				var new_path = uiPath + "/" +extra_path;
 			    }
 			    else
 			    {
-				var new_path = getOutputBasePath();
+				var new_path = uiPath;
 			    }
 			    
 			    var new_folder = Folder( new_path );
@@ -314,7 +336,7 @@
             }
 	    }
 	}
-    function renderSelectedToProjectPath(){
+    function renderSelectedToProjectPath(){;
         var q = app.project.renderQueue;
 	    var items = getSelectedProjectItems();
 	    // alert( items );
