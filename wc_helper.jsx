@@ -12,6 +12,8 @@
     TODO:
         - Get artist initials in Windows too.
 */
+
+// Define the Panel
 (function wcHelperPanel (thisObj) {
     /* Build UI */
     function buildUI(thisObj) {
@@ -21,31 +23,22 @@
         var secondButton = "own";
         var thirdButton = "render";
         var fourthButton = "rename";
+                
         var win = (thisObj instanceof Panel)? thisObj : new Window('palette', windowTitle);
-        win.spacing = 0;
-        win.margins = 1;
+        
         var myProjectGroup = win.add ("group");
         win.projectPathLabel = myProjectGroup.add("statictext");
-
         var myArtistGroup = win.add ("group");
         var artistNameLabel= myArtistGroup.add("statictext");
         win.artistName= myArtistGroup.add("statictext");
         var artistRoleLabel= myArtistGroup.add("statictext");
         win.artistRole= myArtistGroup.add("dropdownlist",undefined,["Offline","Finishing"])
         win.artistRole.selection = 0;
-        
-
-        win.projectPathLabel.text = "asdADSASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASASDasdADSASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASASDasdADSASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASDASASD";
-
+        win.projectPathLabel.text = "000000000000000000000000000000000000000000000000000";
         artistNameLabel.text = "Artist:";
-        artistRoleLabel.text = "Role:";
-        //****//
-        
+        artistRoleLabel.text = "Role:";       
         win.artistName.text = system.callSystem("whoami");
-        
         var myButtonGroup = win.add ("group");
-        myButtonGroup.spacing = 4;
-        myButtonGroup.margins = 4;
         myButtonGroup.orientation = "row";
         win.checkbox1 = myButtonGroup.add( "checkbox", undefined, "Dupli:")
         win.checkbox1.value = true;
@@ -56,6 +49,11 @@
         win.button4 = myButtonGroup2.add ("button", undefined, fourthButton);
         myButtonGroup2.alignment = "center";
         myButtonGroup2.alignChildren = "center";
+        
+        win.spacing = 0;
+        win.margins = 1;
+        myButtonGroup.spacing = 4;
+        myButtonGroup.margins = 4;
 
         win.button1.onClick = function(){
             btnPlus1();
@@ -67,406 +65,385 @@
         win.button3.onClick = function(){
             btnRender();
         }
-
-            win.button4.onClick = function(){
+        win.button4.onClick = function(){
             btnTest();
-            //alert( getItemByName( getTodayString() ));
         }
         win.onResizing = function(){
             updateProjectPath();
         }
 
-    win.layout.layout(true);
+        win.layout.layout(true);
 
     return win
 }
 
+// Show the Panel
+var w = buildUI(thisObj);
+if (w.toString() == "[object Panel]") {
+    w;
+} else {
+    w.show();
+}
 
-    // Show the Panel
-    var w = buildUI(thisObj);
-    if (w.toString() == "[object Panel]") {
-        w;
-    } else {
-        w.show();
+/* General functions */
+w.pad = function ( n, i ){ //pad n with zeroes up to i places.
+    if (String(n).length>=i){
+        return String(n)
+    }else{
+        var dif = i- (String(n)).length;
+        var padding = "";
+        for (p=0;p<dif;p++){
+            padding = padding+"0"
+        }
+        return padding+String(n)
     }
-
-    /* General functions */
+}
+function updateProjectPath(){
+    w.projectPathLabel.text = getOutputBasePath();
+}
+function getSelectedProjectItems(){
     
-    w.pad = function ( n, i ){ //pad n with zeroes up to i places.
-        if (String(n).length>=i){
-            return String(n)
-        }else{
-            var dif = i- (String(n)).length;
-            var padding = "";
-            for (p=0;p<dif;p++){
-                padding = padding+"0"
-            }
-            return padding+String(n)
+    var items = [];
+    var p = app.project;
+    for ( var i = 1 ; i <= p.numItems ; i ++ ){
+        var item = p.item(i);
+        if ( item.selected ){
+            items.push(item);
         }
     }
 
-    function updateProjectPath(){
-        w.projectPathLabel.text = getOutputBasePath();
-        //alert(w.projectPathLabel.text);
-    }
-    function getSelectedProjectItems(){
-        
-        var items = [];
-        var p = app.project;
-        for ( var i = 1 ; i <= p.numItems ; i ++ ){
-            var item = p.item(i);
-            if ( item.selected ){
-                items.push(item);
-            }
-        }
+    return items;
+}
+function getRegex( myComp , regex ){
+    var offlineRevCode = myComp.name;
+    return offlineRevCode.match(regex)[0];
+}
+function getTodayString(){
 
-        return items;
-    }
-    function getRegex( myComp , regex ){
-        var offlineRevCode = myComp.name;
-        return offlineRevCode.match(regex)[0];
-    }
-    function getTodayString(){
+    dt = new Date();
 
-        dt = new Date();
+    var day = w.pad(dt.getDate(),2); //day of month 
+    var month = w.pad(dt.getMonth()+1,2); //monnth 1-12
+    var year = w.pad(dt.getFullYear().toString().substr(2,4),2); //last 2 digits of year
 
-        var day = w.pad(dt.getDate(),2); //day of month 
-        var month = w.pad(dt.getMonth()+1,2); //monnth 1-12
-        var year = w.pad(dt.getFullYear().toString().substr(2,4),2); //last 2 digits of year
+    todayString = String(month)+"_"+String(day)+"_"+String(year); 
+    
+    return todayString
+}
+function getItemTrunk( projectItem ){
 
-        todayString = String(month)+"_"+String(day)+"_"+String(year); 
+    var walkBranch =[]
+    currentItem = projectItem;
+    
+    while ( currentItem.parentFolder.name != "Root"){
         
-        return todayString
+        walkBranch.push(currentItem.parentFolder );
+        currentItem = currentItem.parentFolder;
     }
-    function getItemTrunk( projectItem ){
 
-        var walkBranch =[]
-        currentItem = projectItem;
+    return walkBranch
+}
+function getItemByName( name ){
+    
+    var items = app.project.items;
+    var myItem = null;
+    
+    for ( var i = 1 ; i <= items.length ; i ++ ){
         
-        while ( currentItem.parentFolder.name != "Root"){
-            
-            walkBranch.push(currentItem.parentFolder );
-            currentItem = currentItem.parentFolder;
-        }
+    var currentItem = items[i];
+            if ( currentItem.name == name ){
+            myItem = currentItem;
+        };
+    }
+    return myItem;
+}
 
-        return walkBranch
-    }
-    function getItemByName( name ){
-        
-        var items = app.project.items;
-        var myItem = null;
-        
-        for ( var i = 1 ; i <= items.length ; i ++ ){
-            
-        var currentItem = items[i];
-             if ( currentItem.name == name ){
-                myItem = currentItem;
-            };
-        }
-        return myItem;
-    }
-    /* Project Specific functions */
-    function getOfflineRevCode( myComp ){
-        
-        //var regex = /[0-9]{2}[a-z]{2}/g; //Maixmum rev number 99
-        var regex = /[0-9]{2}[a-z]{2}/g; //Maixmum rev number 99
-        var offlineRevCode = myComp.name.match(regex)[0];        
-        return offlineRevCode;
-    }
-    function getFinishingRevCode( myComp ){
-        
-        var regex = /[0-9]{2}[a-z]{2}[FINCHK]{3}/g; //Maixmum rev number 99
-        var offlineRevCode = myComp.name.match(regex)[0];        
-        return offlineRevCode;
-    }
-    function getItemPath( projectItem ){
-        //not too useful right now as AE's paths aren't unique./
-        var walkPath =""
-        currentItem = projectItem;
+/* Project Specific functions */
+function getOfflineRevCode( myComp ){
+    
+    //var regex = /[0-9]{2}[a-z]{2}/g; //Maixmum rev number 99
+    var regex = /[0-9]{2}[a-z]{2}/g; //Maixmum rev number 99
+    var offlineRevCode = myComp.name.match(regex)[0];        
+    return offlineRevCode;
+}
+function getFinishingRevCode( myComp ){
+    
+    var regex = /[0-9]{2}[a-z]{2}[FINCHK]{3}/g; //Maixmum rev number 99
+    var offlineRevCode = myComp.name.match(regex)[0];        
+    return offlineRevCode;
+}
+function getItemPath( projectItem ){
+    //not too useful right now as AE's paths aren't unique./
+    var walkPath =""
+    currentItem = projectItem;
 
-        while ( currentItem.parentFolder.name != "Root"){
-            walkPath = currentItem.name +"/"+ walkPath;
-            currentItem = currentItem.parentFolder;
-        }
+    while ( currentItem.parentFolder.name != "Root"){
         walkPath = currentItem.name +"/"+ walkPath;
-        walkPath = "/"+ walkPath;
-        
-        return walkPath
+        currentItem = currentItem.parentFolder;
     }
-    function getArtistInitials(){
-        
-        //mac only for now ?
-        var userName = w.artistName.text;
-        
-        //coder's exceptionalism
-        if ( userName = "jperez" ){
-            userName = "jvasquez";
-        }
-
-        artistInitials = userName.substring(0,2);
-
-        return artistInitials;
-    }
-    function versionUpSelectedComps( inc ){
-        //really selected items, might be worth to restrict to just comps ?
-        var selectedComps = getSelectedProjectItems();
-        for ( var i = 0 ; i < selectedComps.length ; i ++ )
-        {
-            versionUpComp( selectedComps[i], inc );
-        }
-        
-
-    }
-    function versionUpComp( myComp, inc ){
-        role = w.artistRole;
-
-        if ( role.selection.index == 0 ){
-            //offline
-            var revCode = getOfflineRevCode( myComp );
-        }else if ( role.selection.index == 1 ){
-            //finishing
-            var revCode = getFinishingRevCode( myComp );
-        }
-
-        splitName = myComp.name.split( revCode );
-
-        var ver = parseInt(revCode.substring(0,3));
-        //alert(ver);
-        //var oldArtistInitials = offlineRevCode.substring(2,5);
-
-        var newArtistInitials = getArtistInitials();
-        role = w.artistRole;
-
-        if ( role.selection.index == 1 ){
-            newArtistInitials = newArtistInitials+"FIN"
-        }
-        myComp.name = splitName[0]+w.pad(ver+inc,2)+newArtistInitials+splitName[1] ;
-    }
-    function getOutputBasePath(){
-
-	    var file = app.project.file;
-	    var file_path = String(app.project.file);
-	    var output_base = "6_Output";
-	    var offline_output_extra = "1_Offline";
-	    var finishing_output_extra = "2_Finishing";
-	    var ae_string = "0_After_Effects";
-        var offline_string = "1_Offline";
-	    var finishing_string = "2_Finish";
-
-   	    var search_offline = file_path.search(offline_string);
-	    var search_finishing = file_path.search(finishing_string);
-        var search_ae = file_path.search(ae_string);
-	    
-	    var base_path = file_path.substr(0,search_ae)+output_base;
-	    
-
-	    if ( search_offline != -1 ){
-            //offline
-             base_path = base_path+"/"+offline_output_extra;  
-	    }
-        if ( search_finishing != -1 ){
-            //finishing
-            base_path = base_path+"/"+finishing_output_extra;
-        }
-
-	    // alert(base_path + "/" + getTodayString());
-	    return base_path + "/" + getTodayString();
-	}
-     function setRenderToProjectPath( rqItem , extra_path ){
-        updateProjectPath()
-        var uiPath =  w.projectPathLabel.text;
-        alert(uiPath);
-        
-        //updateProjectPath();
-
-         //alert(rqItem);
-
-	    // alert( rqItem );
-	    if ( (rqItem.status == 3015) || (rqItem.status == 3013) ){
-		    for ( var j = 1 ; j <= rqItem.numOutputModules ; j ++ ){
-			o_module = rqItem.outputModule(j);
-			
-			var old_name = rqItem.comp.name.replace(".","_");
-			//alert(old_name);
-			if ( o_module.file != null ){
-			    if ( extra_path != undefined )
-			    {
-				var new_path = uiPath + "/" +extra_path;
-			    }
-			    else
-			    {
-				var new_path = uiPath;
-			    }
-			    
-			    var new_folder = Folder( new_path );
-			    if ( !new_folder.exists ){
-				new_folder.create();
-			    }
-			    //alert(new_path + "/" + old_name)
-			    var new_file = new File( new_path + "/" + old_name );
-			    o_module.file = new_file ;
-			    //alert ( new_path );
-			    //o_module.file= new_file;
-			    
-			}
-			
-		    var p = String( o_module.file.path ).split("/");
-		    
-		    p.splice(0,3);
-		    
-		    var s = "";
-		    
-		    for ( var i = 0 ; i < p.length ; i ++ ){
-			s += "\n"+p[i];
-		    }
-		    //alert( "Rendering to :" + "\n" + s + "\n\n" + o_module.file.name );
-		    }
-		}
-	}
-    function setRendersToProjectPath(){
-	    var q = app.project.renderQueue;
-	    //check the render queue item is not already rendered.
-	    for ( var i = 1 ; i <= q.numItems ; i ++ ){
-		item = q.item(i);
-		//3015 is QUEUED 
-		//3013 is NEEDS_OUTPUT
-		
-            if ( (item.status == 3015) || (item.status == 3013) ){
-                setRenderToProjectPath( item );
-            }
-	    }
-	}
-    function renderSelectedToProjectPath(){;
-        var q = app.project.renderQueue;
-	    var items = getSelectedProjectItems();
-	    // alert( items );
-
-	    for ( var i = 0 ; i < items.length; i ++){
-
-			if( items[i].typeName == "Composition" ){
-				var item = items[i];
-				rqItem = q.items.add(item);
-				setRenderToProjectPath(rqItem);
-			}
-			//alert(items);
-			if( items[i].typeName == "Folder" ){
-				var folder = items[i];
-				for ( var j = 1 ; j <= folder.numItems ; j ++ )
-				{
-					var item = folder.items[j];
-					rqItem = q.items.add(item);
-					setRenderToProjectPath(rqItem, item.parentFolder.name );
-				}
-			}
-		}
-    }
-    function versiounUpTodaySelectedComps( inc ){
-        var myComps = getSelectedProjectItems();
-        for ( var i = 0 ; i < myComps.length ; i ++ ){
-            var myComp = myComps[i];
-            versiounUpTodaySelectedComp( myComp,inc );
-        }
-    }
-    function itemIndexInCollection( itemCollection , itemName ){
-        var indexInCollection = -1;
-        for ( var i = 1; i <= itemCollection.length ; i ++){
-            if ( itemCollection[i].name == itemName ){
-                indexInCollection = i;
-            }
-        }
-        return indexInCollection;
+    walkPath = currentItem.name +"/"+ walkPath;
+    walkPath = "/"+ walkPath;
+    
+    return walkPath
+}
+function getArtistInitials(){
+    
+    //mac only for now ?
+    var userName = w.artistName.text;
+    
+    //coder's exceptionalism
+    if ( userName = "jperez" ){
+        userName = "jvasquez";
     }
 
-    function versiounUpTodaySelectedComp( myComp, inc ){
-        //var my_item = getSelectedProjectItems()[0];
+    artistInitials = userName.substring(0,2);
 
-        var t = getItemTrunk(myComp);
+    return artistInitials;
+}
+function versionUpSelectedComps( inc ){
+    //really selected items, might be worth to restrict to just comps ?
+    var selectedComps = getSelectedProjectItems();
+    for ( var i = 0 ; i < selectedComps.length ; i ++ )
+    {
+        versionUpComp( selectedComps[i], inc );
+    }
+    
 
-        var date_re = "[0-9\_]{8}"
+}
+function versionUpComp( myComp, inc ){
+    role = w.artistRole;
 
-        var next_n // for folder creation
-        var new_folder;
-        var date_pos
-        //create new folder under date folder's parent.
-        for ( var i = 0 ; i < t.length ; i ++ )
-        {   
-            var date_search = t[i].name.search(date_re);
-            
-            if ( date_search == 0 )
-            {
-                var date_pos = i;
-                var date_string = getTodayString();
-                //Check if a dated folder already exists.
-                new_folder = getItemByName( date_string );                
-                if ( new_folder == null ){
-                    new_folder = t[i].parentFolder.items.addFolder( date_string )               
+    if ( role.selection.index == 0 ){
+        //offline
+        var revCode = getOfflineRevCode( myComp );
+    }else if ( role.selection.index == 1 ){
+        //finishing
+        var revCode = getFinishingRevCode( myComp );
+    }
+
+    splitName = myComp.name.split( revCode );
+
+    var ver = parseInt(revCode.substring(0,3));
+    //alert(ver);
+    //var oldArtistInitials = offlineRevCode.substring(2,5);
+
+    var newArtistInitials = getArtistInitials();
+    role = w.artistRole;
+
+    if ( role.selection.index == 1 ){
+        newArtistInitials = newArtistInitials+"FIN"
+    }
+    myComp.name = splitName[0]+w.pad(ver+inc,2)+newArtistInitials+splitName[1] ;
+}
+function getOutputBasePath(){
+
+    var file = app.project.file;
+    var file_path = String(app.project.file);
+    var output_base = "6_Output";
+    var offline_output_extra = "1_Offline";
+    var finishing_output_extra = "2_Finishing";
+    var ae_string = "0_After_Effects";
+    var offline_string = "1_Offline";
+    var finishing_string = "2_Finish";
+
+    var search_offline = file_path.search(offline_string);
+    var search_finishing = file_path.search(finishing_string);
+    var search_ae = file_path.search(ae_string);
+    
+    var base_path = file_path.substr(0,search_ae)+output_base;
+    
+
+    if ( search_offline != -1 ){
+        //offline
+            base_path = base_path+"/"+offline_output_extra;  
+    }
+    if ( search_finishing != -1 ){
+        //finishing
+        base_path = base_path+"/"+finishing_output_extra;
+    }
+
+    // alert(base_path + "/" + getTodayString());
+    return base_path + "/" + getTodayString();
+}
+function setRenderToProjectPath( rqItem , extra_path ){
+    updateProjectPath()
+    var uiPath =  w.projectPathLabel.text;
+    //alert(uiPath);
+    //updateProjectPath();
+    //alert(rqItem);
+    // alert( rqItem );
+    if ( (rqItem.status == 3015) || (rqItem.status == 3013) ){
+        for ( var j = 1 ; j <= rqItem.numOutputModules ; j ++ ){
+            o_module = rqItem.outputModule(j);    
+            var old_name = rqItem.comp.name.replace(".","_");
+            //alert(old_name);
+            if ( o_module.file != null ){
+                if ( extra_path != undefined )
+                {
+                var new_path = uiPath + "/" +extra_path;
                 }
-            };
+                else
+                {
+                var new_path = uiPath;
+                }
+                
+                var new_folder = Folder( new_path );
+                if ( !new_folder.exists ){
+                new_folder.create();
+                }
+                //alert(new_path + "/" + old_name)
+                var new_file = new File( new_path + "/" + old_name );
+                o_module.file = new_file ;
+                //alert ( new_path );
+                //o_module.file= new_file;
+                
+            }      
+            var p = String( o_module.file.path ).split("/");   
+            p.splice(0,3);
+            var s = "";
+            for ( var i = 0 ; i < p.length ; i ++ ){
+            s += "\n"+p[i];
+            }
+            //alert( "Rendering to :" + "\n" + s + "\n\n" + o_module.file.name );
         }
-        //alert(date_search);
-        //create same branch structure as trunk under new date folder.
-        var next_folder = new_folder;
-        for ( var i = date_pos-1 ; i >= 0 ; i -- )
+    }
+}
+function setRendersToProjectPath(){
+    var q = app.project.renderQueue;
+    //check the render queue item is not already rendered.
+    for ( var i = 1 ; i <= q.numItems ; i ++ ){
+    item = q.item(i);
+    //3015 is QUEUED 
+    //3013 is NEEDS_OUTPUT
+    
+        if ( (item.status == 3015) || (item.status == 3013) ){
+            setRenderToProjectPath( item );
+        }
+    }
+}
+function renderSelectedToProjectPath(){;
+    var q = app.project.renderQueue;
+    var items = getSelectedProjectItems();
+    // alert( items );
+
+    for ( var i = 0 ; i < items.length; i ++){
+
+        if( items[i].typeName == "Composition" ){
+            var item = items[i];
+            rqItem = q.items.add(item);
+            setRenderToProjectPath(rqItem);
+        }
+        //alert(items);
+        if( items[i].typeName == "Folder" ){
+            var folder = items[i];
+            for ( var j = 1 ; j <= folder.numItems ; j ++ )
+            {
+                var item = folder.items[j];
+                rqItem = q.items.add(item);
+                setRenderToProjectPath(rqItem, item.parentFolder.name );
+            }
+        }
+    }
+}
+function versiounUpTodaySelectedComps( inc ){
+    var myComps = getSelectedProjectItems();
+    for ( var i = 0 ; i < myComps.length ; i ++ ){
+        var myComp = myComps[i];
+        versiounUpTodaySelectedComp( myComp,inc );
+    }
+}
+function itemIndexInCollection( itemCollection , itemName ){
+    var indexInCollection = -1;
+    for ( var i = 1; i <= itemCollection.length ; i ++){
+        if ( itemCollection[i].name == itemName ){
+            indexInCollection = i;
+        }
+    }
+    return indexInCollection;
+}
+function versiounUpTodaySelectedComp( myComp, inc ){
+    //var my_item = getSelectedProjectItems()[0];
+
+    var t = getItemTrunk(myComp);
+
+    var date_re = "[0-9\_]{8}"
+
+    var next_n // for folder creation
+    var new_folder;
+    var date_pos
+    //create new folder under date folder's parent.
+    for ( var i = 0 ; i < t.length ; i ++ )
+    {   
+        var date_search = t[i].name.search(date_re);
+        
+        if ( date_search == 0 )
         {
-            var next_folder_name = t[i].name;
-            //todo make sure that the folder doesnt exist yet.
-            var next_folder_index = itemIndexInCollection( next_folder.items , next_folder_name );
-            //alert(next_folder_index);
-           if ( next_folder_index == -1 ){
-               next_folder = next_folder.items.addFolder(next_folder_name);
-           }else{
-               next_folder = next_folder.items[next_folder_index];
-           }
-            
-            
-        }
-        new_comp = myComp.duplicate();
-        new_comp.name = myComp.name;
-        versionUpComp( new_comp, inc );
-        new_comp.parentFolder = next_folder;
-        //myComp.selected = false;
-        //app.project.activeItem = new_comp;
-        myComp.selected = false;
-        new_comp.selected = true;
+            var date_pos = i;
+            var date_string = getTodayString();
+            //Check if a dated folder already exists.
+            new_folder = getItemByName( date_string );                
+            if ( new_folder == null ){
+                new_folder = t[i].parentFolder.items.addFolder( date_string )               
+            }
+        };
     }
-
-    /* UI Buttons */
-    function btnPlus1(){
-        var dupli = w.checkbox1.value == true; 
-        if ( dupli ){
-            app.beginUndoGroup("Create copies of selected Comps for today and increment.")
-            versiounUpTodaySelectedComps( 1 );
+    //alert(date_search);
+    //create same branch structure as trunk under new date folder.
+    var next_folder = new_folder;
+    for ( var i = date_pos-1 ; i >= 0 ; i -- )
+    {
+        var next_folder_name = t[i].name;
+        //todo make sure that the folder doesnt exist yet.
+        var next_folder_index = itemIndexInCollection( next_folder.items , next_folder_name );
+        //alert(next_folder_index);
+        if ( next_folder_index == -1 ){
+            next_folder = next_folder.items.addFolder(next_folder_name);
         }else{
-            app.beginUndoGroup("Increment selected Comps.")
-            versionUpSelectedComps( 1 );
+            next_folder = next_folder.items[next_folder_index];
         }
-        app.endUndoGroup()
+        
+        
     }
-    function btnOwn(){
-        var dupli = w.checkbox1.value == true; 
-        if ( dupli ){
-            app.beginUndoGroup("Own duplicates of selected Comps.")
-            versiounUpTodaySelectedComps( 0 );
-        }else{
-            app.beginUndoGroup("Own selected Comps.")
-            versionUpSelectedComps( 0 );
-        }
+    new_comp = myComp.duplicate();
+    new_comp.name = myComp.name;
+    versionUpComp( new_comp, inc );
+    new_comp.parentFolder = next_folder;
+    //myComp.selected = false;
+    //app.project.activeItem = new_comp;
+    myComp.selected = false;
+    new_comp.selected = true;
+}
+
+/* UI Buttons */
+function btnPlus1(){
+    var dupli = w.checkbox1.value == true; 
+    if ( dupli ){
+        app.beginUndoGroup("Create copies of selected Comps for today and increment.")
+        versiounUpTodaySelectedComps( 1 );
+    }else{
+        app.beginUndoGroup("Increment selected Comps.")
+        versionUpSelectedComps( 1 );
     }
-
-    function btnRender(){
-        renderSelectedToProjectPath();
+    app.endUndoGroup()
+}
+function btnOwn(){
+    var dupli = w.checkbox1.value == true; 
+    if ( dupli ){
+        app.beginUndoGroup("Own duplicates of selected Comps.")
+        versiounUpTodaySelectedComps( 0 );
+    }else{
+        app.beginUndoGroup("Own selected Comps.")
+        versionUpSelectedComps( 0 );
     }
-
-    function btnTest(){
-        compHerder = new CompHerder();
-        compHerder.activate();
-        //alert("Nothing to test right now.")
-    }
-
-    ////
-
-
-
+}
+function btnRender(){
+    renderSelectedToProjectPath();
+}
+function btnTest(){
+    compHerder = new CompHerder();
+    compHerder.activate();
+    //alert("Nothing to test right now.")
+}
 
 function CompHerder(){
     this.methods ={
@@ -554,7 +531,6 @@ function CompHerder(){
     }
     this.init = function init()
     {
-        
 	// this.btnLauyout = 
 	// "button\
 	//  {\
@@ -696,23 +672,21 @@ function CompHerder(){
      myUI.window.tabs.search_tab.replaceGrp.replaceString.onActivate = function(){
         myUI.window.tabs.search_tab.replaceGrp.replaceString.text = "";        
     }
-	//EVENT HANDLERS
+	
+    //EVENT HANDLERS
 	myUI.window.tabs.search_tab.doItBtn.onClick = function(){
 	    var search_str = myUI.window.tabs.search_tab.searchGrp.searchString.text;
 	    var replace_str = myUI.window.tabs.search_tab.replaceGrp.replaceString.text;
 	    myUI.methods.replace( myUI.methods.getSelectedProjectItems() , search_str , replace_str );
 	};
-	
 	myUI.window.tabs.suprefix.suprefixGrp.pre.prefixBtn.onClick = function(){
 	    var pre = myUI.window.tabs.suprefix.suprefixGrp.pre.prefixString.text;
 	    myUI.methods.prefix( myUI.methods.getSelectedProjectItems() , pre );
 	};
-	
 	myUI.window.tabs.suprefix.suprefixGrp.su.sufixBtn.onClick = function(){
 	    var su = myUI.window.tabs.suprefix.suprefixGrp.su.sufixString.text;
 	    myUI.methods.suffix( myUI.methods.getSelectedProjectItems() , su );
 	};
-	
 	myUI.window.tabs.rename_tab.renameGrp.renameBtn.onClick = function(){
 	    var new_name = myUI.window.tabs.rename_tab.renameGrp.renameString.text;
 	    myUI.methods.rename( myUI.methods.getSelectedProjectItems() , new_name );
