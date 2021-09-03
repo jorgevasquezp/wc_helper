@@ -13,6 +13,17 @@
         - Get artist initials in Windows too.
 */
 
+
+
+
+
+//resizeCompsCanvasCentered( [ 1080, 1920 ] , true )
+
+
+
+
+
+
 // Define the Panel
 (function wcHelperPanel (thisObj) {
     /* Build UI */
@@ -23,6 +34,7 @@
         var secondButton = "own";
         var thirdButton = "render";
         var fourthButton = "rename";
+        var fifthButton = "resize Comp";
                 
         var win = (thisObj instanceof Panel)? thisObj : new Window('palette', windowTitle);
         
@@ -47,6 +59,11 @@
         var myButtonGroup2 = win.add ("group");
         win.button3 = myButtonGroup2.add ("button", undefined, thirdButton);
         win.button4 = myButtonGroup2.add ("button", undefined, fourthButton);
+        var myButtonGroup3 = win.add ("group");
+        win.resizeWidth = myButtonGroup3.add ("edittext", undefined, 1920);
+        myButtonGroup3.add ("statictext", undefined, "x");
+        win.resizeHeight = myButtonGroup3.add ("edittext", undefined, 1080);
+        win.button5 = myButtonGroup3.add ("button", undefined, fifthButton);
         myButtonGroup2.alignment = "center";
         myButtonGroup2.alignChildren = "center";
         
@@ -68,6 +85,12 @@
         win.button4.onClick = function(){
             btnTest();
         }
+    
+         win.button5.onClick = function(){
+             var newSize =  [ parseInt(w.resizeWidth.text) , parseInt(w.resizeHeight.text) ] ;
+            resizeCompsCanvasCentered( newSize , true )
+        }
+
         win.onResizing = function(){
             updateProjectPath();
         }
@@ -159,6 +182,89 @@ function getItemByName( name ){
 }
 
 /* Project Specific functions */
+function getSelectedProjectItems(){
+    var items = [];
+    var p = app.project;
+    for ( var i = 1 ; i <= p.numItems ; i ++ ){
+        var item = p.item(i);
+        if ( item.selected ){
+            items.push(item);
+        }
+    }
+    return items;
+}
+function getLayersByParented( isParented ){
+
+    /* TODO 
+        not use activeItem. but have the function take a comp as an argument, to avoid activItem becoming obsolete.
+    */
+    var active_comp = app.project.activeItem;
+    var filtered_layers = [];
+
+    for ( var i = 1; i <= active_comp.layers.length ; i ++ )
+    {
+        var my_layer = active_comp.layers[i];
+
+        if ( (my_layer.parent == null) != isParented )
+        {
+            filtered_layers.push( my_layer );
+        };
+    }
+    
+    return filtered_layers 
+}
+function resizeCompCanvas( comp, new_size ){
+    comp.width = new_size[0];
+    comp.height = new_size[1];
+};
+function resizeCompCanvasCentered( my_comp, new_size, keep_scaler ){
+  //app.beginUndoGroup("Resize Comp Canvas Centered")
+    var n  = my_comp.layers.addNull();
+    
+    //center null on actual comp size
+    n.position.setValue([my_comp.width/2,my_comp.height/2]);
+    resizeCompCanvas( my_comp , new_size );
+    
+    //parent unparented layers to MAIN_SCALER
+    var unparenterLayers = getLayersByParented( false );
+    for ( var i = 0; i < unparenterLayers.length ; i ++ ){
+        var current_layer = unparenterLayers[i];
+        
+        if ( (current_layer != n) && ( true )) {
+            current_layer.locked = false;
+            current_layer.parent = n;
+            current_layer.locked = true;
+        }
+    }
+    
+    // center null to new comp size
+    n.position.setValue(new_size/2);
+   
+   //get rid of scaling null or not.
+    if (keep_scaler)
+    {
+        n.name = 'MAIN_SCALER';
+    }else{
+        n.remove()
+    }
+    //app.endUndoGroup();
+}
+function resizeCompsCanvasCentered( new_size, keep_scaler ){
+    //alert();
+    app.beginUndoGroup("Resize Comps' Canvas Centered")
+    var my_comps = getSelectedProjectItems();
+    for ( var i = 0 ; i < my_comps.length ; i ++ ){
+        var my_comp = my_comps[i];
+        //alert( my_comp.name )
+        resizeCompCanvasCentered( my_comp, new_size, true );
+    }
+    app.endUndoGroup();
+}
+function setFPS( comp, newFPS ){
+    comp.frameDuration = 1/newFPS;
+};
+
+
 function getOfflineRevCode( myComp ){
     
     //var regex = /[0-9]{2}[a-z]{2}/g; //Maixmum rev number 99
@@ -239,6 +345,7 @@ function getOutputBasePath(){
 
     var file = app.project.file;
     var file_path = String(app.project.file);
+    
     var output_base = "6_Output";
     var offline_output_extra = "1_Offline";
     var finishing_output_extra = "2_Finishing";
@@ -252,6 +359,9 @@ function getOutputBasePath(){
     
     var base_path = file_path.substr(0,search_ae)+output_base;
     
+    if( file_path == "null"){
+        base_path="~/Desktop";
+    }
 
     if ( search_offline != -1 ){
         //offline
@@ -309,6 +419,7 @@ function setRenderToProjectPath( rqItem , extra_path ){
     }
 }
 function setRendersToProjectPath(){
+    updateProjectPath()
     var q = app.project.renderQueue;
     //check the render queue item is not already rendered.
     for ( var i = 1 ; i <= q.numItems ; i ++ ){
@@ -322,6 +433,7 @@ function setRendersToProjectPath(){
     }
 }
 function renderSelectedToProjectPath(){;
+    updateProjectPath()
     var q = app.project.renderQueue;
     var items = getSelectedProjectItems();
     // alert( items );
@@ -721,3 +833,6 @@ function CompHerder(){
     return this;
 }
 })(this);
+
+
+
