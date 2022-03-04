@@ -13,17 +13,6 @@
         - Get artist initials in Windows too.
 */
 
-
-
-
-
-//resizeCompsCanvasCentered( [ 1080, 1920 ] , true )
-
-
-
-
-
-
 // Define the Panel
 (function wcHelperPanel (thisObj) {
     /* Build UI */
@@ -35,6 +24,7 @@
         var thirdButton = "render";
         var fourthButton = "rename";
         var fifthButton = "resize Comp";
+        var sixthButton = "Add Letterbox";
                 
         var win = (thisObj instanceof Panel)? thisObj : new Window('palette', windowTitle);
         
@@ -66,7 +56,9 @@
         win.button5 = myButtonGroup3.add ("button", undefined, fifthButton);
         myButtonGroup2.alignment = "center";
         myButtonGroup2.alignChildren = "center";
-        
+        var myButtonGroup4 = win.add ("group");
+        win.button6 = myButtonGroup4.add ("button", undefined, sixthButton);
+
         win.spacing = 0;
         win.margins = 1;
         myButtonGroup.spacing = 4;
@@ -83,12 +75,16 @@
             btnRender();
         }
         win.button4.onClick = function(){
-            btnTest();
+            btnHerd();
         }
     
-         win.button5.onClick = function(){
-             var newSize =  [ parseInt(w.resizeWidth.text) , parseInt(w.resizeHeight.text) ] ;
+        win.button5.onClick = function(){
+            var newSize =  [ parseInt(w.resizeWidth.text) , parseInt(w.resizeHeight.text) ] ;
             resizeCompsCanvasCentered( newSize , true )
+        }
+        
+        win.button6.onClick = function(){
+             btnAddLetterbox();
         }
 
         win.onResizing = function(){
@@ -193,12 +189,12 @@ function getSelectedProjectItems(){
     }
     return items;
 }
-function getLayersByParented( isParented ){
+function getCompLayersByParented( aComp, isParented ){
 
     /* TODO 
         not use activeItem. but have the function take a comp as an argument, to avoid activItem becoming obsolete.
     */
-    var active_comp = app.project.activeItem;
+    var active_comp = aComp;
     var filtered_layers = [];
 
     for ( var i = 1; i <= active_comp.layers.length ; i ++ )
@@ -218,15 +214,20 @@ function resizeCompCanvas( comp, new_size ){
     comp.height = new_size[1];
 };
 function resizeCompCanvasCentered( my_comp, new_size, keep_scaler ){
-  //app.beginUndoGroup("Resize Comp Canvas Centered")
+    /* TO DO AVOID SUCCESEIVE RESCALES TO ADD MORE AND MORE NULLS */
+
     var n  = my_comp.layers.addNull();
     
     //center null on actual comp size
     n.position.setValue([my_comp.width/2,my_comp.height/2]);
+    
     resizeCompCanvas( my_comp , new_size );
     
+    
+    var unparenterLayers = getCompLayersByParented( my_comp , false );
+
     //parent unparented layers to MAIN_SCALER
-    var unparenterLayers = getLayersByParented( false );
+    
     for ( var i = 0; i < unparenterLayers.length ; i ++ ){
         var current_layer = unparenterLayers[i];
         
@@ -236,7 +237,7 @@ function resizeCompCanvasCentered( my_comp, new_size, keep_scaler ){
             current_layer.locked = true;
         }
     }
-    
+
     // center null to new comp size
     n.position.setValue(new_size/2);
    
@@ -247,24 +248,20 @@ function resizeCompCanvasCentered( my_comp, new_size, keep_scaler ){
     }else{
         n.remove()
     }
-    //app.endUndoGroup();
+    
 }
 function resizeCompsCanvasCentered( new_size, keep_scaler ){
-    //alert();
     app.beginUndoGroup("Resize Comps' Canvas Centered")
-    var my_comps = getSelectedProjectItems();
-    for ( var i = 0 ; i < my_comps.length ; i ++ ){
-        var my_comp = my_comps[i];
-        //alert( my_comp.name )
-        resizeCompCanvasCentered( my_comp, new_size, true );
+    var myComps = getSelectedProjectItems();
+    for ( var i = 0 ; i < myComps.length ; i ++){
+        var myComp = myComps[i];
+        resizeCompCanvasCentered( myComp, new_size, keep_scaler );
     }
     app.endUndoGroup();
 }
 function setFPS( comp, newFPS ){
     comp.frameDuration = 1/newFPS;
 };
-
-
 function getOfflineRevCode( myComp ){
     
     //var regex = /[0-9]{2}[a-z]{2}/g; //Maixmum rev number 99
@@ -343,8 +340,8 @@ function versionUpComp( myComp, inc ){
 }
 function getOutputBasePath(){
 
-    var file = app.project.file;
-    var file_path = String(app.project.file);
+    var f = app.project.file;
+    var f_path = String( f );
     
     var output_base = "6_Output";
     var offline_output_extra = "1_Offline";
@@ -353,13 +350,13 @@ function getOutputBasePath(){
     var offline_string = "1_Offline";
     var finishing_string = "2_Finish";
 
-    var search_offline = file_path.search(offline_string);
-    var search_finishing = file_path.search(finishing_string);
-    var search_ae = file_path.search(ae_string);
+    var search_offline = f_path.search(offline_string);
+    var search_finishing = f_path.search(finishing_string);
+    var search_ae = f_path.search(ae_string);
     
-    var base_path = file_path.substr(0,search_ae)+output_base;
+    var base_path = f_path.substr(0,search_ae)+output_base;
     
-    if( file_path == "null"){
+    if( f_path == "null"){
         base_path="~/Desktop";
     }
 
@@ -525,6 +522,35 @@ function versiounUpTodaySelectedComp( myComp, inc ){
     myComp.selected = false;
     new_comp.selected = true;
 }
+function addLetterbox(){
+    var LetterboxLayer = app.project.activeItem.layers.addShape()
+    var aspectControl = LetterboxLayer.property("Effects").addProperty("ADBE Slider Control")
+    aspectControl.name = "Aspect Ratio"
+    aspectControl.property("Slider").setValue(16/9)
+    var colorControl = LetterboxLayer.property("Effects").addProperty("ADBE Color Control")
+    colorControl.name = "Color"
+    colorControl.property("Color").setValue([0,0,0,1])
+    LetterboxLayer.name = "Letterbox"
+    var compFrame = LetterboxLayer.property("Contents").addProperty("ADBE Vector Shape - Rect")
+    compFrame.name = "CompFrame"
+    compFrame.property("Size").expression = "[ thisComp.width , thisComp.height ]"
+    var letterboxRect = LetterboxLayer.property("Contents").addProperty("ADBE Vector Shape - Rect")
+    letterboxRect.name = "Letterbox"
+    letterboxRect.property("Size").expression ='w = thisComp.width;\
+    h = thisComp.height;\
+    compAspect = w / h ;\
+    aspect = effect("Aspect Ratio")("Slider");\
+    if (compAspect <= aspect ) {\
+     	[ w, w / aspect ]\
+    }else{\
+        [ h*aspect , h ]\
+    }'
+    var letterboxMerge = LetterboxLayer.property("Contents").addProperty("ADBE Vector Filter - Merge")
+    letterboxMerge.mode.setValue(3)
+    var letterboxFill = LetterboxLayer.property("Contents").addProperty("ADBE Vector Graphic - Fill")
+    letterboxFill.color.setValue([0,0,0,1])    
+}
+
 
 /* UI Buttons */
 function btnPlus1(){
@@ -551,12 +577,20 @@ function btnOwn(){
 function btnRender(){
     renderSelectedToProjectPath();
 }
-function btnTest(){
+function btnHerd(){
     compHerder = new CompHerder();
     compHerder.activate();
     //alert("Nothing to test right now.")
 }
-
+function btnAddLetterbox(){
+    alert("wtf")
+    addLetterbox();
+    /*
+    app.beginUndoGroup("Add Letterbox")
+    addLetterbox(  );
+    app.endUndoGroup()
+    */
+}
 function CompHerder(){
     this.methods ={
 	pad : function ( n , pad ) {
@@ -833,6 +867,4 @@ function CompHerder(){
     return this;
 }
 })(this);
-
-
 
