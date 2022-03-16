@@ -6,8 +6,8 @@
     https://yorchnet.com/
     https://github.com/jorgevasquezp
     
-    Changes 0.2:
-        - None
+    Changes 0.3:
+        - Added a Letterbox tool.
     
     TODO:
         - Get artist initials in Windows too.
@@ -19,12 +19,19 @@
     function buildUI(thisObj) {
 
         var windowTitle = "WC Artist Helper";
-        var firstButton = "+1";
-        var secondButton = "own";
-        var thirdButton = "render";
-        var fourthButton = "rename";
-        var fifthButton = "resize Comp";
-        var sixthButton = "Add Letterbox";
+
+        var btnTxtIncrement = "+1";
+        var btnTxtOwn = "own";
+        var btnTxtRender = "render";
+        var btnTxtRenamer = "rename";
+        var btnTxtResizer = "resize comp";
+        var btnTxtLetterbox = "+letterbox";
+        var ddlTxtAspects =[ "16:9" , "1:1" , "4:5" , "9:16" , "-" , "1.85:1" , "1.9:1" , "2:1" , "2.2:1" , "21:9" , "2.35:1" , "2.39:1" , "2.4:1" ]
+        var ddlTxtShapes =[ "UHD" , "HD", "1x1" , "4x5" , "9x16" , "-" , "CUSTOM" ]
+        var btnTxtAlignAnchorPoint = "align ap"
+        var btnTxtAlignToLayer = "align 2 lyr"
+        var btnTxtFlatten = "flatten"
+        var ddlTxtMode = ["Offline","Finishing"]
                 
         var win = (thisObj instanceof Panel)? thisObj : new Window('palette', windowTitle);
         
@@ -34,7 +41,7 @@
         var artistNameLabel= myArtistGroup.add("statictext");
         win.artistName= myArtistGroup.add("statictext");
         var artistRoleLabel= myArtistGroup.add("statictext");
-        win.artistRole= myArtistGroup.add("dropdownlist",undefined,["Offline","Finishing"])
+        win.artistRole= myArtistGroup.add( "dropdownlist" , undefined , ddlTxtMode )
         win.artistRole.selection = 0;
         win.projectPathLabel.text = "000000000000000000000000000000000000000000000000000";
         artistNameLabel.text = "Artist:";
@@ -44,20 +51,54 @@
         myButtonGroup.orientation = "row";
         win.checkbox1 = myButtonGroup.add( "checkbox", undefined, "Dupli:")
         win.checkbox1.value = true;
-        win.button1 = myButtonGroup.add ("button", undefined, firstButton);
-        win.button2 = myButtonGroup.add ("button", undefined, secondButton);
+        
+        //Increment
+        win.button1 = myButtonGroup.add ("button", undefined, btnTxtIncrement);
+        win.button1.preferredSize = [45,28]
+        
+        //Owner
+        win.button2 = myButtonGroup.add ("button", undefined, btnTxtOwn);
+        win.button2.preferredSize = [45,28]
+        
         var myButtonGroup2 = win.add ("group");
-        win.button3 = myButtonGroup2.add ("button", undefined, thirdButton);
-        win.button4 = myButtonGroup2.add ("button", undefined, fourthButton);
-        var myButtonGroup3 = win.add ("group");
-        win.resizeWidth = myButtonGroup3.add ("edittext", undefined, 1920);
-        myButtonGroup3.add ("statictext", undefined, "x");
-        win.resizeHeight = myButtonGroup3.add ("edittext", undefined, 1080);
-        win.button5 = myButtonGroup3.add ("button", undefined, fifthButton);
         myButtonGroup2.alignment = "center";
         myButtonGroup2.alignChildren = "center";
+        
+        //Render
+        win.button3 = myButtonGroup2.add ("button", undefined, btnTxtRender);
+        win.button3.preferredSize = [45,28]
+
+        //Rename
+        win.button4 = myButtonGroup2.add ("button", undefined, btnTxtRenamer);
+        win.button4a = myButtonGroup2.add ("button", undefined, btnTxtFlatten);
+        win.button4.preferredSize = [55,28]
+        win.button4a.preferredSize = [45,28]
+
+        //Resizer
+        var myButtonGroup3 = win.add ("group");
+        var mySizeGroup = myButtonGroup3.add ("group");
+        win.resizeWidth = mySizeGroup.add ("edittext", undefined, 1920);
+        win.resizeWidth.enabled = false;
+        mySizeGroup.add ("statictext", undefined, "x");
+        win.resizeHeight = mySizeGroup.add ("edittext", undefined, 1080);
+        win.resizeHeight.enabled = false;
+        //mySizeGroup.hide();
         var myButtonGroup4 = win.add ("group");
-        win.button6 = myButtonGroup4.add ("button", undefined, sixthButton);
+        win.ddlShapes= myButtonGroup4.add( "dropdownlist" , undefined , ddlTxtShapes )
+        win.ddlShapes.selection = 1;
+        win.button5 = myButtonGroup4.add ("button", undefined, btnTxtResizer);
+        
+        //Letterbox
+        var myButtonGroup4 = win.add ("group");
+        win.ddlAspects= myButtonGroup4.add( "dropdownlist" , undefined , ddlTxtAspects )
+        win.ddlAspects.selection = 2
+        
+        win.button6 = myButtonGroup4.add ("button", undefined, btnTxtLetterbox);
+
+        //Anchor Alignment tools
+        var myButtonGroup5 = win.add ("group");        
+        win.btnAlgnAP = myButtonGroup5.add ("button", undefined, btnTxtAlignAnchorPoint);
+        win.btnAlgn2Lyr = myButtonGroup5.add ("button", undefined, btnTxtAlignToLayer);
 
         win.spacing = 0;
         win.margins = 1;
@@ -77,18 +118,56 @@
         win.button4.onClick = function(){
             btnHerd();
         }
-    
+        win.button4a.onClick = function(){
+            yFlattenSelectedFolderContents();
+        }
         win.button5.onClick = function(){
             var newSize =  [ parseInt(w.resizeWidth.text) , parseInt(w.resizeHeight.text) ] ;
             resizeCompsCanvasCentered( newSize , true )
-        }
-        
+        }        
         win.button6.onClick = function(){
-             btnAddLetterbox();
+            var aspect =  String(win.ddlAspects.selection)
+             btnAddLetterbox( aspect );
         }
-
         win.onResizing = function(){
             updateProjectPath();
+        }
+        win.ddlShapes.onChange = function(){
+            var sel = String(this.selection);
+            var cust_sel = (sel == "CUSTOM")
+            win.resizeHeight.enabled = cust_sel;
+            win.resizeWidth.enabled = cust_sel;
+            
+            var newSize = [ win.resizeHeight.text,win.resizeWidth.text]
+            if ( sel == "UHD" ){
+                newSize = [3840,2160];
+            } else if ( sel == "HD" ){
+                newSize = [1920,1080];
+            } else if ( sel == "1x1" ){
+                newSize = [1080,1080];
+            } else if ( sel == "4x5" ){
+                newSize = [1080,1350];
+            } else if ( sel == "9x16" ){
+                newSize = [1080,1920];
+            } 
+            /*
+            if ( sel == "CUSTOM" ){
+                mySizeGroup.show();
+                win.layout.resize();
+            } else {
+
+                mySizeGroup.hide();
+                mySizeGroup.layout.resize();
+            }
+            */            
+            $.writeln($.includePath);
+
+        }
+        win.btnAlgnAP.onClick = function(){
+            AlgnAP();
+        }
+        win.btnAlgn2Lyr.onClick = function(){
+            Algn2Lyr();
         }
 
         win.layout.layout(true);
@@ -118,7 +197,10 @@ w.pad = function ( n, i ){ //pad n with zeroes up to i places.
     }
 }
 function updateProjectPath(){
-    w.projectPathLabel.text = getOutputBasePath();
+    var myPath = getOutputBasePath();
+    w.projectPathLabel.text = myPath;
+    return myPath
+    //w.projectPathLabel.text = Math.random() ;
 }
 function getSelectedProjectItems(){
     
@@ -132,6 +214,30 @@ function getSelectedProjectItems(){
     }
 
     return items;
+}
+function getAllItems( folderItem ){
+	
+	var items = [];
+	var folders = [];
+	
+	for ( var i = 1 ; i <= folderItem.numItems ; i ++ ){
+	var item = folderItem.item(i);
+	
+	if ( (item.typeName != "Folder") ){
+			//if ( (isInArray( items ,item )) == false ){
+				items.push( item );
+			//}
+		}else{
+				var new_items = getAllItems(item);
+				for ( var j = 0 ; j < new_items.length ; j ++ ){
+					new_item = new_items[j];
+					//if ( (isInArray ( new_item )) == false ){
+						items.push ( new_item );
+					//}
+				}
+			}
+		}
+	return items
 }
 function getRegex( myComp , regex ){
     var offlineRevCode = myComp.name;
@@ -175,6 +281,35 @@ function getItemByName( name ){
         };
     }
     return myItem;
+}
+function purgeEmptyFolders(){
+	//app.beginUndoGroup("Purge Empty Folders")
+	var emptyFolders = [];
+	
+	var p = app.project;
+	for ( var i = p.numItems ; i >= 1 ; i -- ){
+		item = p.item(i);
+		if ( item.typeName == "Folder" ){
+			if ( item.numItems <= 0 ){
+				item.remove();
+			}
+		}
+	}
+	
+	//app.endUndoGroup()
+}
+function flatten( items, root ){
+	app.beginUndoGroup("Flatten Selected Folder Contents")
+	for ( var i = 0; i < items.length ; i ++){
+		item = items[i];
+		item.parentFolder = root;
+	}
+	app.endUndoGroup()
+	purgeEmptyFolders();
+	return
+}
+function yFlattenSelectedFolderContents(){
+	flatten( getAllItems( getSelectedProjectItems()[0] ) , getSelectedProjectItems()[0] );
 }
 
 /* Project Specific functions */
@@ -373,8 +508,8 @@ function getOutputBasePath(){
     return base_path + "/" + getTodayString();
 }
 function setRenderToProjectPath( rqItem , extra_path ){
-    updateProjectPath()
-    var uiPath =  w.projectPathLabel.text;
+    
+    var uiPath =  updateProjectPath();
     //alert(uiPath);
     //updateProjectPath();
     //alert(rqItem);
@@ -522,21 +657,22 @@ function versiounUpTodaySelectedComp( myComp, inc ){
     myComp.selected = false;
     new_comp.selected = true;
 }
-function addLetterbox(){
+function addLetterbox( aspect ){
     var LetterboxLayer = app.project.activeItem.layers.addShape()
     var aspectControl = LetterboxLayer.property("Effects").addProperty("ADBE Slider Control")
     aspectControl.name = "Aspect Ratio"
-    aspectControl.property("Slider").setValue(16/9)
+    var aspectDimensions = aspect.split(":")
+    aspectControl.property("Slider").setValue( aspectDimensions[0] / aspectDimensions[1] )
     var colorControl = LetterboxLayer.property("Effects").addProperty("ADBE Color Control")
     colorControl.name = "Color"
     colorControl.property("Color").setValue([0,0,0,1])
-    LetterboxLayer.name = "Letterbox"
+    LetterboxLayer.name = String(aspect) + " Letterbox"
     var compFrame = LetterboxLayer.property("Contents").addProperty("ADBE Vector Shape - Rect")
     compFrame.name = "CompFrame"
     compFrame.property("Size").expression = "[ thisComp.width , thisComp.height ]"
     var letterboxRect = LetterboxLayer.property("Contents").addProperty("ADBE Vector Shape - Rect")
     letterboxRect.name = "Letterbox"
-    letterboxRect.property("Size").expression ='w = thisComp.width;\
+    letterboxRect.property("Size").expression = 'w = thisComp.width;\
     h = thisComp.height;\
     compAspect = w / h ;\
     aspect = effect("Aspect Ratio")("Slider");\
@@ -548,9 +684,147 @@ function addLetterbox(){
     var letterboxMerge = LetterboxLayer.property("Contents").addProperty("ADBE Vector Filter - Merge")
     letterboxMerge.mode.setValue(3)
     var letterboxFill = LetterboxLayer.property("Contents").addProperty("ADBE Vector Graphic - Fill")
-    letterboxFill.color.setValue([0,0,0,1])    
+    letterboxFill.property("Color").expression = 'effect("Color")("Color")'
 }
+function Algn2Lyr(){
+    var exp = '/*    0 center   |   1 right   |   2 left   |   3 top   |   4 bottom   |   5 top right   |   6 top left   |   7 bottom right   |   8 bottom left       */\
+    function getAbsScale( myLayer ){\
+        s = [1,1];\
+        while( myLayer.hasParent == true ){\
+            s = [s[0] * (myLayer.transform.scale[0]/100),s[1] * (myLayer.transform.scale[1]/100)];\
+    \
+            myLayer = myLayer.parent;\
+        }\
+        if( myLayer .hasParent == false ){\
+            s = [s[0] * (myLayer.transform.scale[0]/100),s[1] * (myLayer.transform.scale[1]/100)];\
+        }\
+        return s*100\
+    }\
+    function centerTextLayerAnchor( n ){\
+        myAnchorLayer = effect("Anchor To Layer")("Layer");\
+        r =  myAnchorLayer.sourceRectAtTime();\
+        t = r.top; \
+        h = r.height; \
+        myAnchorLayerAncP = myAnchorLayer.transform.anchorPoint;\
+        myAnchorLayerPos = myAnchorLayer.toComp(myAnchorLayerAncP);\
+        myAnchorScale = getAbsScale( myAnchorLayer )[0]/100;\
+        \
+        x = myAnchorLayerPos[0];\
+        y = myAnchorLayerPos[1];\
+        \
+        myMargins = effect("Anchor To Margins")("Point");\
+        \
+        switch (n){\
+        case 0 :\
+            offset = [0,0];\
+            break;\
+        case 1 :\
+            offset = [ r.width/2 , 0 , 0];\
+            break;\
+        case 2 :\
+            offset = [ -r.width/2 , 0 , 0];\
+            break;\
+        case 3 :\
+            offset = [0 ,  -r.height/2 , 0];\
+            break;\
+        case 4 :\
+            offset = [0 ,  r.height/2 , 0];\
+            break;\
+        case 5 :\
+            offset = [ r.width/2 ,  -r.height/2 , 0];\
+            break;\
+        case 6 :\
+            offset = [ -r.width/2 ,  -r.height/2 , 0];\
+            break;\
+        case 7 :\
+            offset = [ r.width/2 ,  r.height/2 , 0];\
+            break;\
+        case 8 :\
+            offset = [ -r.width/2 ,  r.height/2 , 0];\
+            break;\
+        }\
+        newAnchor = [ x , y ] + (myAnchorScale*offset) +myMargins ;\
+    \
+        return newAnchor\
+    }\
+    \
+    anchor_index = effect("Anchor To")("Menu") - 1;\
+    centerTextLayerAnchor(anchor_index);'
 
+    var layers = app.project.activeItem.selectedLayers ;
+    for ( var i = 0; i < layers.length ; i++ ){
+        var fx = layers[i].property("Effects");
+        var j = fx.addProperty("ADBE Layer Control").propertyIndex; 
+        fx.property(j).name = "Anchor To Layer";
+        var j = fx.addProperty("ADBE Dropdown Control").propertyIndex; //Fucking don't call properties by name, it gets messy, use propertyIndex whenever possible.
+        fx.property(j).property("Menu").setPropertyParameters( ["center","right","left","top","bottom","top_right","top_left","bottom_right","bottom_left"] );
+        fx.property(j).name = "Anchor To";
+        j = layers[i].property("Effects").addProperty("ADBE Point Control").propertyIndex;
+        fx.property(j).property("Point").setValue([0,0]);
+        fx.property(j).name = "Anchor To Margins";
+        layers[i].property("Position").expression = exp;
+    }
+}
+function AlgnAP(){
+    var exp = '/*    0 center   |   1 right   |   2 left   |   3 top   |   4 bottom   |   5 top right   |   6 top left   |   7 bottom right   |   8 bottom left       */\
+function centerTextLayerAnchor( n ){\
+	alignToStill = effect("Align to Still")("Checkbox") == true;\
+	if (alignToStill){\
+		still_time = thisComp.marker.key("Still").time;\
+		r =  thisLayer.sourceRectAtTime(still_time);\
+	}else{\
+		r =  thisLayer.sourceRectAtTime();\
+	}\
+	t = r.top; \
+	h = r.height\
+	x = r.left + (r.width/2);\
+	y = (t-( t-h)+(t*2))/2;\
+	switch (n){\
+	case 0 :\
+		offset = [0,0];	\
+		break;\
+	case 1 :\
+		offset = [ r.width/2 , 0 , 0];\
+		break;\
+	case 2 :\
+		offset = [ -r.width/2 , 0 , 0];\
+		break;\
+	case 3 :\
+		offset = [0 ,  -r.height/2 , 0];\
+		break;\
+	case 4 :\
+		offset = [0 ,  r.height/2 , 0];\
+		break;\
+	case 5 :\
+		offset = [ r.width/2 ,  -r.height/2 , 0];\
+		break;\
+	case 6 :\
+		offset = [ -r.width/2 ,  -r.height/2 , 0];\
+		break;\
+	case 7 :\
+		offset = [ r.width/2 ,  r.height/2 , 0];\
+		break;\
+	case 8 :\
+		offset = [ -r.width/2 ,  r.height/2 , 0];\
+		break;\
+	}\
+	newAnchor = [ x , y ] + offset;\
+	return newAnchor\
+}\
+anchor_index = effect("Anchor Point Alignment")("Menu") - 1;\
+centerTextLayerAnchor(anchor_index);'
+
+    var layers = app.project.activeItem.selectedLayers ;
+    for ( var i = 0; i < layers.length ; i++ ){
+        var fx = layers[i].property("Effects");
+        var j = fx.addProperty("ADBE Dropdown Control").propertyIndex; //Fucking don't call properties by name, it gets messy, use propertyIndex whenever possible.
+        fx.property(j).property("Menu").setPropertyParameters( ["center","right","left","top","bottom","top_right","top_left","bottom_right","bottom_left"] );
+        fx.property(j).name = "Anchor Point Alignment";
+        j = layers[i].property("Effects").addProperty("ADBE Checkbox Control").propertyIndex;
+        fx.property(j).name = "Align to Still";
+        layers[i].property("Anchor Point").expression = exp;
+    }
+}
 
 /* UI Buttons */
 function btnPlus1(){
@@ -575,6 +849,7 @@ function btnOwn(){
     }
 }
 function btnRender(){
+    updateProjectPath();
     renderSelectedToProjectPath();
 }
 function btnHerd(){
@@ -582,9 +857,8 @@ function btnHerd(){
     compHerder.activate();
     //alert("Nothing to test right now.")
 }
-function btnAddLetterbox(){
-    alert("wtf")
-    addLetterbox();
+function btnAddLetterbox( aspect ){
+    addLetterbox( aspect );
     /*
     app.beginUndoGroup("Add Letterbox")
     addLetterbox(  );
@@ -866,5 +1140,7 @@ function CompHerder(){
     this.init();
     return this;
 }
+function btnFlatten(){
+    yFlattenSelectedFolderContents();
+}
 })(this);
-

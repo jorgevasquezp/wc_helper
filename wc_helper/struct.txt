@@ -1,0 +1,19 @@
+1_Images
+    1_PSD
+    2_Textures
+2_Vector
+3_Footage
+    1_Shots
+    2_Stock
+    3_Prerender
+4_3D_Renders
+    MM_DD_YY
+5_Reference
+    1_Cut
+    2_R+D
+Solids
+z_Comps
+    YEAR
+        MM_DD_YY
+            3_Prerender
+zz_AE_Import
