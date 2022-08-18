@@ -134,23 +134,9 @@
             yFlattenSelectedFolderContents();
         }
         win.button5.onClick = function(){
+            var sel = String(win.ddlShapes.selection);
+            //alert(sel);
             var newSize =  [ parseInt(w.resizeWidth.text) , parseInt(w.resizeHeight.text) ] ;
-            resizeCompsCanvasCentered( newSize , true )
-        }        
-        win.button6.onClick = function(){
-            var aspect =  String(win.ddlAspects.selection)
-            btnAddLetterbox( aspect );
-        }
-        win.onResizing = function(){
-            updateProjectPath();
-        }
-        win.ddlShapes.onChange = function(){
-            var sel = String(this.selection);
-            var cust_sel = (sel == "CUSTOM")
-            win.resizeHeight.enabled = cust_sel;
-            win.resizeWidth.enabled = cust_sel;
-            
-            var newSize = [ win.resizeHeight.text,win.resizeWidth.text]
             if ( sel == "UHD" ){
                 newSize = [3840,2160];
             } else if ( sel == "HD" ){
@@ -162,6 +148,24 @@
             } else if ( sel == "9x16" ){
                 newSize = [1080,1920];
             } 
+            //alert(newSize)
+            resizeCompsCanvasCentered( newSize , true )
+        }        
+        win.button6.onClick = function(){
+            var aspect =  String(win.ddlAspects.selection)
+            btnAddLetterbox( aspect );
+        }
+        win.onResizing = function(){
+            updateProjectPath();
+        }
+        win.ddlShapes.onChange = function(){
+            var sel = String(this.selection);
+            
+            var cust_sel = (sel == "CUSTOM")
+            win.resizeHeight.enabled = cust_sel;
+            win.resizeWidth.enabled = cust_sel;
+            
+           
             /*
             if ( sel == "CUSTOM" ){
                 mySizeGroup.show();
@@ -678,6 +682,7 @@ function versiounUpTodaySelectedComp( myComp, inc ){
     new_comp.selected = true;
 }
 function addLetterbox( aspect ){
+    app.beginUndoGroup("Add "+aspect+" letterbox");
     var LetterboxLayer = app.project.activeItem.layers.addShape()
     var aspectControl = LetterboxLayer.property("Effects").addProperty("ADBE Slider Control")
     aspectControl.name = "Aspect Ratio"
@@ -705,6 +710,7 @@ function addLetterbox( aspect ){
     letterboxMerge.mode.setValue(3)
     var letterboxFill = LetterboxLayer.property("Contents").addProperty("ADBE Vector Graphic - Fill")
     letterboxFill.property("Color").expression = 'effect("Color")("Color")'
+    app.endUndoGroup()
 }
 function Algn2Lyr(){
     var exp = '/*    0 center   |   1 right   |   2 left   |   3 top   |   4 bottom   |   5 top right   |   6 top left   |   7 bottom right   |   8 bottom left       */\
@@ -1032,20 +1038,30 @@ function CompHerder(){
         var insertText = insertText;
         var myPos = pos;
         var newText;
-        if( myPos >= 0 ){
-            newText= myText.substr(0,myPos)+"_"+insertText+myText.substr(myPos);
-        }else{
-            newText= myText.substr(0,myText.length+myPos)+insertText+"_"+myText.substr(myText.length+myPos);
+        if( myPos > 0 ){
+            newText= myText.substr(0,myPos)+"_"+insertText+"_"+myText.substr(myPos);
+        }else if (myPos == 0){
+            newText= insertText+"_"+myText;
+        }
+        else
+        {
+            if (myPos == -1){
+                newText= myText+"_"+insertText;
+            }else{
+                newText= myText.substr(0,myText.length+myPos+1)+"_"+insertText+"_"+myText.substr(myText.length+myPos+1);
+            }
         }
         return newText
     },
     insertAtSelectedItemsNames: function ( text, pos){
+        app.beginUndoGroup("Insert at Selected Items' names");
         var my_comps = getSelectedProjectItems();
 
         for ( var i = 0; i < my_comps.length ; i ++ ){
             var myComp = my_comps[i];
             myComp.name = compHerder.methods.insertAt( myComp.name , text , pos);
         }
+        app.endUndoGroup();
     }
 
 	
@@ -1166,12 +1182,12 @@ function CompHerder(){
 		    text: 'Trim',\
             trimGrp: Group {\
                 alignment: ['fill','fill'], \
-                alignChildren: ['left','center'], \
+                alignChildren: ['center','center'], \
                 orientation: 'row', \
-                trimStartEnabled: Checkbox {alignment: ['fill','center']}, \
-                trimStart: EditText {text:'TRIM START', enabled : False, alignment: ['fill','center']}, \
-                trimEndEnabled: Checkbox {alignment: ['fill','center']}, \
-                trimEnd: EditText {text:'TRIM END', enabled : False, alignment: ['fill','center']}, \
+                trimStartEnabled: Checkbox {text:'TRIM START:'}, \
+                trimStart: EditText {text:'0', enabled : False}, \
+                trimEndEnabled: Checkbox {text:'TRIM END:'}, \
+                trimEnd: EditText {text:'0', enabled : False}, \
                 trimBtn: Button {text: 'Trim'} ,\
 		        }\
 		    },\
@@ -1221,13 +1237,40 @@ function CompHerder(){
 
 	    // myUI.methods.rename( myUI.methods.getSelectedProjectItems() , new_name );
 	};
-    myUI.window.tabs.trim_tab.trimGrp.trimBtn.onClick = function(){
-        var startTrim = parseInt(myUI.window.tabs.trim_tab.trimGrp.trimStart.text);
-        var endTrim = parseInt(myUI.window.tabs.trim_tab.trimGrp.trimEnd.text);
-        alert( startTrim +","+ endTrim );
+    myUI.window.tabs.trim_tab.trimGrp.trimStartEnabled.onClick = function(){
+        
+        if ( myUI.window.tabs.trim_tab.trimGrp.trimStartEnabled.value == false){
+            myUI.window.tabs.trim_tab.trimGrp.trimStart.text = 'TRIM START';
+        }else{
+            myUI.window.tabs.trim_tab.trimGrp.trimStart.text = 0;
+        }
 
-	    // var new_name = myUI.window.tabs.rename_tab.renameGrp.renameString.text;
-	    // myUI.methods.rename( myUI.methods.getSelectedProjectItems() , new_name );
+        myUI.window.tabs.trim_tab.trimGrp.trimStart.enabled =  myUI.window.tabs.trim_tab.trimGrp.trimStartEnabled.value;
+        
+    };
+    myUI.window.tabs.trim_tab.trimGrp.trimEndEnabled.onClick = function(){
+        
+        if ( myUI.window.tabs.trim_tab.trimGrp.trimEndEnabled.value == false){
+            myUI.window.tabs.trim_tab.trimGrp.trimEnd.text = 'TRIM END';
+        }else{
+            myUI.window.tabs.trim_tab.trimGrp.trimEnd.text = 0;
+        }
+
+        myUI.window.tabs.trim_tab.trimGrp.trimEnd.enabled = myUI.window.tabs.trim_tab.trimGrp.trimEndEnabled.value;
+
+        
+    };
+    myUI.window.tabs.trim_tab.trimGrp.trimBtn.onClick = function(){
+        app.beginUndoGroup("Trim Comp Names");
+        var startTrim = parseInt(myUI.window.tabs.trim_tab.trimGrp.trimStart.text);
+        var endTrim = parseInt(myUI.window.tabs.trim_tab.trimGrp.trimEnd.text);       
+        
+	    var myComps = getSelectedProjectItems();
+        for ( var i = 0 ; i < myComps.length ; i ++ ){            
+            var myComp = myComps[i];
+            myComp.name = myComp.name.substr(0 + startTrim ,myComp.name.length - endTrim);
+        }
+        app.endUndoGroup();
 	};
 	
 	return(this);
